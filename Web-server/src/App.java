@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
-
+import java.util.HashMap;
+import java.util.Map;
 public class App {
 
     public static void main(String[] args) {
@@ -21,6 +22,7 @@ public class App {
 
 class ClientHandler implements Runnable {
     private Socket clientSocket;
+    private static Map<String, String> dataStore = new HashMap<>(); // In-memory data store
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -39,11 +41,18 @@ class ClientHandler implements Runnable {
             if (requestLine != null && !requestLine.isEmpty()) {
                 String[] requestParts = requestLine.split(" ");
                 String method = requestParts[0];
+                String path = requestParts[1];
 
                 if ("GET".equalsIgnoreCase(method)) {
-                    handleGetRequest(out);
+                    handleGetRequest(path, out);
                 } else if ("POST".equalsIgnoreCase(method)) {
-                    handlePostRequest(in, out);
+                    handlePostRequest(path, in, out);
+                } else if ("PUT".equalsIgnoreCase(method)) {
+                    handlePutRequest(path, in, out);
+                } else if ("PATCH".equalsIgnoreCase(method)) {
+                    handlePatchRequest(path, in, out);
+                } else if ("DELETE".equalsIgnoreCase(method)) {
+                    handleDeleteRequest(path, out);
                 } else {
                     sendNotFound(out);
                 }
@@ -53,39 +62,95 @@ class ClientHandler implements Runnable {
         }
     }
 
-    private void handleGetRequest(PrintWriter out) {
-        out.println("HTTP/1.1 200 OK");
-        out.println("Content-Type: text/html");
-        out.println("Connection: close");
-        out.println();
-        out.println("<html><body><h1>GET request received</h1></body></html>");
+    private void handleGetRequest(String path, PrintWriter out) {
+        String resource = getResourceFromPath(path);
+        if (dataStore.containsKey(resource)) {
+            String data = dataStore.get(resource);
+            out.println("HTTP/1.1 200 OK");
+            out.println("Content-Type: text/html");
+            out.println("Connection: close");
+            out.println();
+            out.println("<html><body><h1>GET request received</h1>");
+            out.println("<p>Resource: " + resource + "</p>");
+            out.println("<p>Data: " + data + "</p>");
+            out.println("</body></html>");
+        } else {
+            sendNotFound(out);
+        }
         out.flush();
     }
 
-    private void handlePostRequest(BufferedReader in, PrintWriter out) throws IOException {
-        // Read headers
-        String line;
-        int contentLength = 0;
-        while (!(line = in.readLine()).isEmpty()) {
-            if (line.startsWith("Content-Length:")) {
-                contentLength = Integer.parseInt(line.split(" ")[1]);
-            }
-        }
+    private void handlePostRequest(String path, BufferedReader in, PrintWriter out) throws IOException {
+        String resource = getResourceFromPath(path);
+        String postData = readRequestBody(in);
+        dataStore.put(resource, postData); // Store the data with the resource as the key
 
-        // Read the body (post data)
-        char[] body = new char[contentLength];
-        in.read(body, 0, contentLength);
-
-        String postData = new String(body);
-        System.out.println("Post data: " + postData);
-
-        out.println("HTTP/1.1 200 OK");
+        out.println("HTTP/1.1 201 Created");
         out.println("Content-Type: text/html");
         out.println("Connection: close");
         out.println();
         out.println("<html><body><h1>POST request received</h1>");
+        out.println("<p>Resource: " + resource + "</p>");
         out.println("<p>Data: " + postData + "</p>");
         out.println("</body></html>");
+        out.flush();
+    }
+
+    private void handlePutRequest(String path, BufferedReader in, PrintWriter out) throws IOException {
+        String resource = getResourceFromPath(path);
+        String putData = readRequestBody(in);
+        if (dataStore.containsKey(resource)) {
+            dataStore.put(resource, putData); // Update the data in memory
+
+            out.println("HTTP/1.1 200 OK");
+            out.println("Content-Type: text/html");
+            out.println("Connection: close");
+            out.println();
+            out.println("<html><body><h1>PUT request received</h1>");
+            out.println("<p>Resource: " + resource + "</p>");
+            out.println("<p>Data: " + putData + "</p>");
+            out.println("</body></html>");
+        } else {
+            sendNotFound(out);
+        }
+        out.flush();
+    }
+
+    private void handlePatchRequest(String path, BufferedReader in, PrintWriter out) throws IOException {
+        String resource = getResourceFromPath(path);
+        String patchData = readRequestBody(in);
+        if (dataStore.containsKey(resource)) {
+            dataStore.put(resource, patchData); // Update the data in memory
+
+            out.println("HTTP/1.1 200 OK");
+            out.println("Content-Type: text/html");
+            out.println("Connection: close");
+            out.println();
+            out.println("<html><body><h1>PATCH request received</h1>");
+            out.println("<p>Resource: " + resource + "</p>");
+            out.println("<p>Data: " + patchData + "</p>");
+            out.println("</body></html>");
+        } else {
+            sendNotFound(out);
+        }
+        out.flush();
+    }
+
+    private void handleDeleteRequest(String path, PrintWriter out) {
+        String resource = getResourceFromPath(path);
+        if (dataStore.containsKey(resource)) {
+            dataStore.remove(resource); // Remove the data from memory
+
+            out.println("HTTP/1.1 200 OK");
+            out.println("Content-Type: text/html");
+            out.println("Connection: close");
+            out.println();
+            out.println("<html><body><h1>DELETE request received</h1>");
+            out.println("<p>Resource: " + resource + " deleted.</p>");
+            out.println("</body></html>");
+        } else {
+            sendNotFound(out);
+        }
         out.flush();
     }
 
@@ -96,5 +161,28 @@ class ClientHandler implements Runnable {
         out.println();
         out.println("<html><body><h1>404 - Not Found</h1></body></html>");
         out.flush();
+    }
+
+    private String readRequestBody(BufferedReader in) throws IOException {
+        StringBuilder body = new StringBuilder();
+        String line;
+        int contentLength = 0;
+
+        while (!(line = in.readLine()).isEmpty()) {
+            if (line.startsWith("Content-Length:")) {
+                contentLength = Integer.parseInt(line.split(" ")[1]);
+            }
+        }
+
+        char[] charArray = new char[contentLength];
+        in.read(charArray, 0, contentLength);
+        body.append(charArray);
+
+        return body.toString();
+    }
+
+    private String getResourceFromPath(String path) {
+        // Assuming path is something like "/resource1", this method returns "resource1"
+        return path.startsWith("/") ? path.substring(1) : path;
     }
 }
