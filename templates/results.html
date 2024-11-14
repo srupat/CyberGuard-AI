@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV Analysis Results</title>
+</head>
+<body>
+    <h1>CSV Analysis Results</h1>
+    <ul>
+        {% for result in results %}
+            <li>Packet {{ result.Packet }}: {{ result.Prediction }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/">Back</a>
+</body>
+</html>
