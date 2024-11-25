@@ -2,15 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV Analysis Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background: linear-gradient(45deg, #ffffff, #f8c8d5, hsl(299, 55%, 64%));
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+        #results {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            font-size: 18px;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #fafafa;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        a:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
+
+<header>
     <h1>CSV Analysis Results</h1>
-    <ul>
-        {% for result in results %}
-            <li>Packet {{ result.Packet }}: {{ result.Prediction }}</li>
-        {% endfor %}
-    </ul>
-    <a href="/">Back</a>
+</header>
+
+<main>
+    <section id="results">
+        <h2>Packet Analysis</h2>
+        <ul>
+            {% for result in results %}
+                <li>Packet {{ result.Packet }}: {{ result.Prediction }}</li>
+            {% endfor %}
+        </ul>
+        <a href="/">Back</a>
+    </section>
+</main>
+
 </body>
 </html>
